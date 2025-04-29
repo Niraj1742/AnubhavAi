@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+
+# Model files (if they're large)
+models/*.weights
+models/*.caffemodel
+models/*.pth
+
+# Environment
+.env 

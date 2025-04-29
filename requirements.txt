@@ -1,0 +1,10 @@
+streamlit==1.32.0
+opencv-python==4.8.1.78
+numpy==1.24.3
+torch==2.1.0
+torchvision==0.16.0
+Pillow==10.2.0
+tensorflow==2.15.0
+deepface==0.0.79
+rembg==2.0.50
+scikit-learn==1.4.1.post1
