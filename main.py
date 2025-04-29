@@ -1,3 +1,17 @@
+"""
+AnubhavAI - Advanced Image Analysis Platform
+Main Application File
+
+This file contains the main Streamlit application that provides a web interface
+for advanced image analysis capabilities including face detection, emotion analysis,
+background removal, and scene classification.
+"""
+
+# Standard library imports
+import os
+import json
+
+# Third-party imports
 import streamlit as st
 import cv2
 import numpy as np
@@ -5,8 +19,8 @@ from PIL import Image
 import torch
 import torchvision.transforms as transforms
 from rembg import remove
-import os
-import json
+
+# Local imports
 from utils import (
     load_places_model, predict_scene,
     load_emotion_model, detect_emotions,
@@ -14,7 +28,7 @@ from utils import (
     load_face_detector, detect_faces
 )
 
-# Set page config
+# Configure Streamlit page settings
 st.set_page_config(
     page_title="AnubhavAI - Advanced Image Analysis",
     page_icon="🤖",
@@ -22,7 +36,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS for styling the application
 st.markdown("""
     <style>
     .main {
@@ -64,7 +78,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Title and description
+# Application title and description
 st.title("🤖 AnubhavAI - Advanced Image Analysis")
 st.markdown("""
 This application provides comprehensive image analysis capabilities including:
@@ -74,7 +88,7 @@ This application provides comprehensive image analysis capabilities including:
 - Detailed Analysis Report
 """)
 
-# Sidebar
+# Sidebar content
 with st.sidebar:
     st.header("About")
     st.markdown("""
@@ -93,13 +107,13 @@ with st.sidebar:
     4. Download the analysis report
     """)
 
-# Initialize session state
+# Initialize session state variables
 if 'processed_image' not in st.session_state:
     st.session_state.processed_image = None
 if 'analysis_report' not in st.session_state:
     st.session_state.analysis_report = {}
 
-# File uploader
+# File uploader for image input
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
@@ -108,7 +122,7 @@ if uploaded_file is not None:
         image = Image.open(uploaded_file)
         st.image(image, caption="Uploaded Image", use_column_width=True)
         
-        # Get image information
+        # Extract image information
         image_info = {
             "filename": uploaded_file.name,
             "size": image.size,
@@ -116,12 +130,13 @@ if uploaded_file is not None:
             "format": image.format
         }
         
-        # Convert PIL Image to OpenCV format
+        # Convert PIL Image to OpenCV format for processing
         image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
         
-        # Create columns for different features
+        # Create two columns for feature display
         col1, col2 = st.columns(2)
         
+        # Face Detection and Emotion Analysis Column
         with col1:
             st.subheader("Face Detection & Emotion Analysis")
             try:
@@ -131,24 +146,24 @@ if uploaded_file is not None:
                 # Detect faces using both frontal and profile cascades
                 faces = detect_faces(image_cv, face_cascade, profile_cascade)
                 
-                # Draw rectangle around faces and analyze emotions
+                # Process each detected face
                 face_img = image_cv.copy()
                 emotion_model = load_emotion_model()
                 
                 face_analysis = []
                 for i, (x, y, w, h) in enumerate(faces):
-                    # Draw rectangle
+                    # Draw rectangle around face
                     cv2.rectangle(face_img, (x, y), (x+w, y+h), (0, 255, 0), 2)
                     cv2.putText(face_img, f"Face {i+1}", (x, y-10),
                               cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                     
-                    # Extract face region
+                    # Extract face region for analysis
                     face_region = image_cv[y:y+h, x:x+w]
                     
-                    # Analyze face location
+                    # Analyze face location in image
                     face_location = analyze_face_location(face_region, image_cv.shape[:2])
                     
-                    # Detect emotions
+                    # Detect emotions in face
                     emotions = detect_emotions(face_region, emotion_model)
                     face_analysis.append({
                         "face_id": i + 1,
@@ -157,6 +172,7 @@ if uploaded_file is not None:
                         "emotions": emotions
                     })
                 
+                # Display face detection results
                 st.image(cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB), caption="Face Detection")
                 st.markdown(f"""
                 <div class="detection-box">
@@ -165,12 +181,13 @@ if uploaded_file is not None:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Display emotion analysis for each face
+                # Display detailed emotion analysis for each face
                 for face in face_analysis:
                     with st.expander(f"Face {face['face_id']} Analysis"):
                         st.markdown(f"**Location:** {face['location']['description']}")
                         st.markdown(f"**Size:** {face['location']['size_ratio']:.1f}% of image")
                         
+                        # Display emotion probabilities
                         for emotion in face['emotions']:
                             st.markdown(f"**{emotion['emotion']}**")
                             st.markdown(f"*{emotion['description']}*")
@@ -184,130 +201,50 @@ if uploaded_file is not None:
             except Exception as e:
                 st.error(f"Face detection failed: {str(e)}")
         
+        # Background Removal Column
         with col2:
             st.subheader("Background Segmentation")
             try:
-                # Remove background
+                # Remove background from image
                 output = remove(image)
                 st.image(output, caption="Background Removed")
             except Exception as e:
                 st.error(f"Background removal failed: {str(e)}")
         
-        # Scene Classification
+        # Scene Classification Section
         st.subheader("Scene Classification")
         try:
+            # Load and run scene classification model
             scene_model = load_places_model()
             scene_predictions = predict_scene(image, scene_model)
             
-            # Display predictions with progress bars
-            for pred in scene_predictions:
-                st.markdown(f"**{pred['category']}**")
-                st.markdown(f"*{pred['description']}*")
-                st.progress(pred['probability'] / 100)
-                st.write(f"Confidence: {pred['probability']:.2f}%")
-                
+            # Display scene classification results
+            st.markdown("### Scene Analysis Results")
+            for scene in scene_predictions:
+                st.markdown(f"**{scene['scene']}**")
+                st.markdown(f"*{scene['description']}*")
+                st.markdown(f"""
+                <div class="emotion-bar">
+                    <div class="emotion-fill" style="width: {scene['probability']}%"></div>
+                </div>
+                """, unsafe_allow_html=True)
+                st.write(f"Confidence: {scene['probability']:.2f}%")
+        
         except Exception as e:
             st.error(f"Scene classification failed: {str(e)}")
         
-        # Generate and display detailed report
-        report = generate_report(face_analysis, scene_predictions, image_info)
-        st.session_state.analysis_report = report
+        # Generate and display analysis report
+        analysis_report = generate_report(face_analysis, scene_predictions, image_info)
+        st.session_state.analysis_report = analysis_report
         
-        # Detailed Analysis Report
-        st.markdown("### 📊 Detailed Analysis Report")
-        report_container = st.container()
-        
-        with report_container:
-            st.markdown("""
-            <div class="report-box">
-                <h4>Image Analysis Summary</h4>
-                <ul>
-                    <li>Total faces detected: {}</li>
-                    <li>Primary scene category: {}</li>
-                    <li>Background successfully removed: {}</li>
-                    <li>Analysis timestamp: {}</li>
-                </ul>
-            </div>
-            """.format(
-                len(faces),
-                scene_predictions[0]['category'] if scene_predictions else "Unknown",
-                "Yes" if 'output' in locals() else "No",
-                report['timestamp']
-            ), unsafe_allow_html=True)
-            
-            # Face Analysis Details
-            st.markdown("#### Face Analysis Details")
-            for face in face_analysis:
-                with st.expander(f"Face {face['face_id']} Details"):
-                    st.markdown(f"**Position:** x={face['position'][0]}, y={face['position'][1]}")
-                    st.markdown(f"**Location:** {face['location']['description']}")
-                    st.markdown(f"**Size:** {face['location']['size_ratio']:.1f}% of image")
-                    st.markdown("**Emotions detected:**")
-                    for emotion in face['emotions']:
-                        st.markdown(f"- {emotion['emotion']}: {emotion['probability']:.2f}%")
-                        st.markdown(f"  *{emotion['description']}*")
-            
-            # Scene Analysis Details
-            st.markdown("#### Scene Analysis Details")
-            for pred in scene_predictions:
-                st.markdown(f"**{pred['category']}**")
-                st.markdown(f"*{pred['description']}*")
-                st.write(f"Confidence: {pred['probability']:.2f}%")
-        
-        # Download options
-        st.markdown("### 📥 Download Analysis Report")
-        report_json = json.dumps(report, indent=2)
+        # Download report button
         st.download_button(
-            label="Download Report (JSON)",
-            data=report_json,
-            file_name="image_analysis_report.json",
+            label="Download Analysis Report",
+            data=json.dumps(analysis_report, indent=2),
+            file_name="analysis_report.json",
             mime="application/json"
         )
         
-        # Generate text report
-        text_report = f"""Image Analysis Report
-Generated on: {report['timestamp']}
-
-Image Information:
-- Filename: {image_info['filename']}
-- Size: {image_info['size']}
-- Format: {image_info['format']}
-
-Face Analysis:
-Total faces detected: {len(face_analysis)}
-
-"""
-        for face in face_analysis:
-            text_report += f"""
-Face {face['face_id']}:
-- Position: x={face['position'][0]}, y={face['position'][1]}
-- Location: {face['location']['description']}
-- Size: {face['location']['size_ratio']:.1f}% of image
-- Emotions:
-"""
-            for emotion in face['emotions']:
-                text_report += f"  * {emotion['emotion']}: {emotion['probability']:.2f}%\n"
-                text_report += f"    {emotion['description']}\n"
-        
-        text_report += f"""
-Scene Analysis:
-Primary scene: {scene_predictions[0]['category']}
-Description: {scene_predictions[0]['description']}
-Confidence: {scene_predictions[0]['probability']:.2f}%
-
-Additional scene predictions:
-"""
-        for pred in scene_predictions[1:]:
-            text_report += f"- {pred['category']}: {pred['probability']:.2f}%\n"
-            text_report += f"  {pred['description']}\n"
-        
-        st.download_button(
-            label="Download Report (TXT)",
-            data=text_report,
-            file_name="image_analysis_report.txt",
-            mime="text/plain"
-        )
-            
     except Exception as e:
         st.error(f"Error processing image: {str(e)}")
 else:
