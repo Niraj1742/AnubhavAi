@@ -1,0 +1,24 @@
+{
+    "include": [
+        "main.py",
+        "utils.py"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__"
+    ],
+    "ignore": [
+        "venv"
+    ],
+    "reportMissingImports": false,
+    "reportMissingTypeStubs": false,
+    "reportMissingModuleSource": false,
+    "reportAttributeAccessIssue": false,
+    "pythonVersion": "3.13",
+    "pythonPlatform": "Windows",
+    "extraPaths": [
+        "E:\\AnubhavAI\\venv\\Lib\\site-packages",
+        "E:\\AnubhavAI"
+    ],
+    "typeCheckingMode": "basic"
+} 
