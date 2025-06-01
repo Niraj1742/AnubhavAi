@@ -60,6 +60,8 @@ AnubhavAI is a sophisticated AI-powered image analysis platform that combines mu
 - **Scene Classification**: Places365 Dataset Model
 - **Background Removal**: U2-Net
 
+  ![Anubhav file structure](models/diagram.png)
+
 ## 🚀 Installation
 
 1. Clone the repository:
